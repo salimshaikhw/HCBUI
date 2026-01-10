@@ -13,6 +13,8 @@ export default function BoothTab() {
 
   const [name, setName] = useState("");
   const [constituencyId, setConstituencyId] = useState("");
+  const [partNumber, setPartNumber] = useState("");
+  const [town, setTown] = useState("");
   const [editingId, setEditingId] = useState(null);
 
   /* ======================
@@ -49,12 +51,16 @@ export default function BoothTab() {
           id: editingId,
           name: name,
           constituencyId: Number(constituencyId),
+          partNumber: partNumber ? Number(partNumber) : null,
+          town: town || null,
         });
       } else {
         // CREATE
         await createBooth({
           name: name,
           constituencyId: Number(constituencyId),
+          partNumber: partNumber ? Number(partNumber) : null,
+          town: town || null,
         });
       }
 
@@ -83,6 +89,8 @@ export default function BoothTab() {
   const resetForm = () => {
     setName("");
     setConstituencyId("");
+    setPartNumber("");
+    setTown("");
     setEditingId(null);
   };
 
@@ -112,6 +120,30 @@ export default function BoothTab() {
           alignItems: "center",
         }}
       >
+        {/* Constituency FIRST */}
+        <select
+          value={constituencyId}
+          onChange={(e) => setConstituencyId(e.target.value)}
+          style={{
+            flex: 2,
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
+        >
+          <option value="">Select Constituency</option>
+          {constituencies.map((c) => {
+            const number = c.constituencyNumber ?? c.constituencyNo ?? c.number ?? c.constituencyId ?? "";
+            const name = c.name ?? c.constituency ?? "";
+            const label = number ? `${number} - ${name}` : name;
+            return (
+              <option key={c.id} value={c.id}>
+                {label}
+              </option>
+            );
+          })}
+        </select>
+
         <input
           type="text"
           placeholder="Booth Name"
@@ -125,23 +157,31 @@ export default function BoothTab() {
           }}
         />
 
-        <select
-          value={constituencyId}
-          onChange={(e) => setConstituencyId(e.target.value)}
+        <input
+          type="number"
+          placeholder="Part Number"
+          value={partNumber}
+          onChange={(e) => setPartNumber(e.target.value)}
           style={{
-            flex: 2,
+            flex: 1,
             padding: "8px",
             borderRadius: "4px",
             border: "1px solid #ccc",
           }}
-        >
-          <option value="">Select Constituency</option>
-          {constituencies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        />
+
+        <input
+          type="text"
+          placeholder="Town"
+          value={town}
+          onChange={(e) => setTown(e.target.value)}
+          style={{
+            flex: 1,
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
+        />
 
         <button
           onClick={handleSave}
@@ -182,6 +222,8 @@ export default function BoothTab() {
         <tr>
           <th>ID</th>
           <th>Booth</th>
+          <th>Part</th>
+          <th>Town</th>
           <th>Constituency</th>
           <th>Actions</th>
         </tr>
@@ -191,6 +233,8 @@ export default function BoothTab() {
           <tr key={b.id}>
             <td>{b.id}</td>
             <td>{b.name}</td>
+            <td>{b.partNumber ?? "-"}</td>
+            <td>{b.town ?? "-"}</td>
             <td>{getConstituencyName(b.constituencyId)}</td>
             <td>
               <button
@@ -198,26 +242,26 @@ export default function BoothTab() {
                   setEditingId(b.id);
                   setName(b.name);
                   setConstituencyId(b.constituencyId);
+                  setPartNumber(b.partNumber ?? "");
+                  setTown(b.town ?? "");
                 }}
                 style={{ marginRight: "8px" }}
               >
                 Edit
               </button>
-
-              <button onClick={() => handleDelete(b.id)}>
-                Delete
-              </button>
+              <button onClick={() => handleDelete(b.id)}>Delete</button>
             </td>
           </tr>
         ))}
 
         {booths.length === 0 && (
           <tr>
-            <td colSpan="4">No data</td>
+            <td colSpan="6">No data</td>
           </tr>
         )}
       </tbody>
     </table>
   </div>
 );
+
 }

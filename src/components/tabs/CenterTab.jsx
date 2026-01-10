@@ -153,11 +153,16 @@ export default function CenterTab() {
           style={{ flex: 1, padding: "8px" }}
         >
           <option value="">Select Booth</option>
-          {booths.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
+          {booths.map((b) => {
+            const number = b.partNumber ?? b.partNo ?? b.boothNumber ?? b.number ?? b.id ?? "";
+            const name = b.name ?? b.booth ?? "";
+            const label = number ? `${number} - ${name}` : name;
+            return (
+              <option key={b.id} value={b.id}>
+                {label}
+              </option>
+            );
+          })}
         </select>
 
         <input

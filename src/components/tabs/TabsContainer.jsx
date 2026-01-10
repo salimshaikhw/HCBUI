@@ -1,12 +1,12 @@
 export default function TabsContainer({ activeTab, setActiveTab }) {
   const tabs = [
+    { key: "familybooking", label: "Family Bookings" },
     { key: "constituency", label: "Constituency" },
     { key: "booth", label: "Booth" },
     { key: "center", label: "Center" },
     { key: "slot", label: "Slot" },
     { key: "holiday", label: "Holiday" },
-    { key: "appointment", label: "Appointment" }, // ✅ ADDED
-    { key: "familybooking", label: "Family Bookings" },
+    // { key: "appointment", label: "Appointment" }, // ✅ ADDED
   ];
 
   return (

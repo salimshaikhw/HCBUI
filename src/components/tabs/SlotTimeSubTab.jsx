@@ -135,11 +135,16 @@ export default function SlotTimeSubTab() {
           style={{ flex: 1, padding: "8px" }}
         >
           <option value="">Select Center</option>
-          {centers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
+          {centers.map((c) => {
+            const number = c.centerNumber ?? c.centerNo ?? c.number ?? c.id ?? "";
+            const name = c.name ?? c.centerName ?? "";
+            const label = number ? `${number} - ${name}` : name;
+            return (
+              <option key={c.id} value={c.id}>
+                {label}
+              </option>
+            );
+          })}
         </select>
 
         <select
@@ -149,11 +154,16 @@ export default function SlotTimeSubTab() {
           style={{ flex: 1, padding: "8px" }}
         >
           <option value="">Select Slot Type</option>
-          {slotTypes.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.slotType1}
-            </option>
-          ))}
+          {slotTypes.map((t) => {
+            const number = t.slotTypeNumber ?? t.number ?? t.id ?? "";
+            const name = t.slotType1 ?? t.name ?? t.slotType ?? "";
+            const label = number ? `${number} - ${name}` : name;
+            return (
+              <option key={t.id} value={t.id}>
+                {label}
+              </option>
+            );
+          })}
         </select>
       </div>
 
@@ -255,8 +265,20 @@ export default function SlotTimeSubTab() {
         {slots.map((s) => (
           <tr key={s.id}>
             <td>{s.id}</td>
-            <td>{centers.find(c => c.id === s.centerId)?.name || "-"}</td>
-            <td>{slotTypes.find(t => t.id === s.slotTypeId)?.slotType1 || "-"}</td>
+            <td>{(() => {
+              const c = centers.find(c => c.id === s.centerId);
+              if (!c) return "-";
+              const number = c.centerNumber ?? c.centerNo ?? c.number ?? c.id ?? "";
+              const name = c.name ?? c.centerName ?? "";
+              return number ? `${number} - ${name}` : name || "-";
+            })()}</td>
+            <td>{(() => {
+              const t = slotTypes.find(t => t.id === s.slotTypeId);
+              if (!t) return "-";
+              const number = t.slotTypeNumber ?? t.number ?? t.id ?? "";
+              const name = t.slotType1 ?? t.name ?? t.slotType ?? "";
+              return number ? `${number} - ${name}` : name || "-";
+            })()}</td>
             <td>
               {s.startTime} - {s.endTime}
             </td>

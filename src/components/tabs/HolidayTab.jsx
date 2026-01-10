@@ -19,6 +19,7 @@ export default function HolidayTab({
   const [holidayDate, setHolidayDate] = useState("");
   const [description, setDescription] = useState("");
   const [fullDay, setFullDay] = useState(false);
+  const [globalHoliday, setGlobalHoliday] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
   /* ---------------- LOAD ---------------- */
@@ -30,7 +31,14 @@ export default function HolidayTab({
   const loadHolidays = async () => {
     try {
       const res = await getHolidays();
-      setRows(res.data);
+      // Normalize incoming records to support different backends
+      const normalize = (h) => ({
+        ...h,
+        globalHoliday:
+          h.globalHoliday ?? h.isGlobalHoliday ?? h.isGlobal ?? h.global ?? false,
+      });
+
+      setRows(Array.isArray(res.data) ? res.data.map(normalize) : []);
     } catch (err) {
       console.error("Failed to load holidays", err);
     }
@@ -55,7 +63,24 @@ export default function HolidayTab({
     setHolidayDate("");
     setDescription("");
     setFullDay(false);
+    setGlobalHoliday(false);
     setEditingId(null);
+  };
+
+  /* ---------------- HELPERS ---------------- */
+
+  const getBoothLabel = (b) => {
+    if (!b) return "-";
+    const number = b.partNumber ?? b.partNo ?? b.boothNumber ?? b.number ?? "";
+    const name = b.name ?? b.booth ?? "";
+    return number ? `${number} - ${name}` : name || "-";
+  };
+
+  const getCenterLabel = (c) => {
+    if (!c) return "-";
+    const number = c.centerNumber ?? c.centerNo ?? c.number ?? c.id ?? "";
+    const name = c.name ?? c.center ?? "";
+    return number ? `${number} - ${name}` : name || "-";
   };
 
   /* ---------------- SAVE / UPDATE ---------------- */
@@ -67,12 +92,21 @@ export default function HolidayTab({
       return alert("Select slot or enable Full Day");
 
     const payload = {
+      // include id for update endpoints that expect it in body
+      ...(editingId ? { id: editingId } : {}),
       boothId: boothId ? Number(boothId) : null,
       centerId: centerId ? Number(centerId) : null,
-      slotId: fullDay ? null : Number(slotId),
-      holidayDate, // ✅ yyyy-mm-dd ONLY
+      slotId: fullDay ? null : slotId ? Number(slotId) : null,
+      holidayDate, // yyyy-mm-dd
       description: description || null,
+      // send multiple variants so backend matches whatever it expects
+      globalHoliday: !!globalHoliday,
+      isGlobalHoliday: !!globalHoliday,
+      isGlobal: !!globalHoliday,
+      global: !!globalHoliday,
     };
+
+    console.log("Saving holiday payload", payload);
 
     try {
       if (editingId) {
@@ -84,8 +118,9 @@ export default function HolidayTab({
       await loadHolidays();
       resetForm();
     } catch (err) {
-      console.error("Save failed", err);
-      alert("Failed to save Holiday");
+      console.error("Save failed", err, err.response?.data);
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? null;
+      alert("Failed to save Holiday" + (serverMsg ? `: ${JSON.stringify(serverMsg)}` : ""));
     }
   };
 
@@ -99,6 +134,7 @@ export default function HolidayTab({
     setHolidayDate(h.holidayDate);
     setDescription(h.description ?? "");
     setFullDay(h.slotId === null);
+    setGlobalHoliday(!!h.globalHoliday);
   };
 
   /* ---------------- DELETE ---------------- */
@@ -144,7 +180,7 @@ export default function HolidayTab({
           <option value="">Select Booth</option>
           {booths.map((b) => (
             <option key={b.id} value={b.id}>
-              {b.name}
+              {getBoothLabel(b)}
             </option>
           ))}
         </select>
@@ -161,7 +197,7 @@ export default function HolidayTab({
           <option value="">Select Center</option>
           {filteredCenters.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              {getCenterLabel(c)}
             </option>
           ))}
         </select>
@@ -193,6 +229,22 @@ export default function HolidayTab({
             }}
           />
           Full Day Holiday
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={globalHoliday}
+            onChange={(e) => setGlobalHoliday(e.target.checked)}
+          />
+          Global Holiday
         </label>
 
         {!fullDay && (
@@ -279,6 +331,7 @@ export default function HolidayTab({
           <th>Center</th>
           <th>Slot</th>
           <th>Date</th>
+          <th>Global</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -293,8 +346,8 @@ export default function HolidayTab({
         {rows.map((h) => (
           <tr key={h.id}>
             <td>{h.id}</td>
-            <td>{booths.find((b) => b.id === h.boothId)?.name || "-"}</td>
-            <td>{centers.find((c) => c.id === h.centerId)?.name || "-"}</td>
+            <td>{getBoothLabel(booths.find((b) => b.id === h.boothId))}</td>
+            <td>{getCenterLabel(centers.find((c) => c.id === h.centerId))}</td>
             <td>
               {h.slotId
                 ? `${slotTimes.find((s) => s.id === h.slotId)?.startTime} - 
@@ -302,6 +355,7 @@ export default function HolidayTab({
                 : "Full Day"}
             </td>
             <td>{h.holidayDate}</td>
+            <td>{h.globalHoliday ? "Yes" : "No"}</td>
             <td>
               <button
                 onClick={() => handleEdit(h)}
