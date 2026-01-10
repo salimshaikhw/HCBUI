@@ -1,220 +1,181 @@
 import { useState } from "react";
+import "../../styles/appointment.css";
 
 export default function AppointmentTab({
   constituencies = [],
   booths = [],
   centers = [],
-  slotTypes = [],
   slotTimes = [],
-  holidays = [],
   rows = [],
   setRows = () => {},
 }) {
-  const [editId, setEditId] = useState(null);
 
-  const [voterId, setVoterId] = useState("");
-  const [voterName, setVoterName] = useState("");
+  /* ---------- FORM STATE ---------- */
+  const [voterIdentifier, setVoterIdentifier] = useState("");
+  const [hchName, setHchName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+
   const [constituencyId, setConstituencyId] = useState("");
   const [boothId, setBoothId] = useState("");
   const [centerId, setCenterId] = useState("");
-  const [slotTypeId, setSlotTypeId] = useState("");
   const [slotTimeId, setSlotTimeId] = useState("");
+
   const [date, setDate] = useState("");
 
-  /* ---------- FILTERS ---------- */
-  const filteredBooths = booths.filter(
-    (b) => b.constituencyId === Number(constituencyId)
-  );
-  const filteredCenters = centers.filter(
-    (c) => c.boothId === Number(boothId)
-  );
-  const filteredSlotTypes = slotTypes.filter(
-    (s) => s.centerId === Number(centerId)
-  );
-  const filteredSlotTimes = slotTimes.filter(
-    (s) => s.slotTypeId === Number(slotTypeId)
-  );
+  const [karyakartaName, setKaryakartaName] = useState("");
+  const [karyakartaContactNumber, setKaryakartaContactNumber] = useState("");
 
-  /* ---------- SAVE / UPDATE ---------- */
-  const saveAppointment = () => {
-    if (!voterId || !voterName || !slotTimeId || !date) {
-      alert("Fill all fields");
+  const [isFamilyHead, setIsFamilyHead] = useState(false);
+  const [familyHeadName, setFamilyHeadName] = useState("");
+  const [familyId, setFamilyId] = useState("");
+  const [isMinor, setIsMinor] = useState(false);
+
+  /* ---------- LOAD ---------- */
+  // Data is provided by parent via `rows` / `setRows` to avoid remote dependency
+
+  /* ---------- CREATE ---------- */
+  const saveAppointment = async () => {
+    if (!voterIdentifier || !centerId || !slotTimeId || !date) {
+      alert("Fill required fields");
       return;
     }
 
-    // Holiday block
-    const isHoliday = holidays.some(
-      (h) =>
-        h.centerId === Number(centerId) &&
-        h.date === date &&
-        (h.fullDay || h.slotTimeId === Number(slotTimeId))
-    );
+    const payload = {
+      voterIdentifier,
+      hchName,
+      age: Number(age),
+      gender,
 
-    if (isHoliday) {
-      alert("Holiday! Appointment not allowed.");
-      return;
+      constituencyId: Number(constituencyId),
+      boothId: Number(boothId),
+      centerId: Number(centerId),
+      slotId: Number(slotTimeId),
+
+      appointmentDate: date,
+
+      karyakartaName,
+      karyakartaContactNumber,
+
+      isFamilyHead,
+      familyHeadName,
+      familyId: Number(familyId),
+      isMinor,
+    };
+
+    // Create locally (no API dependency)
+    const newId = Date.now();
+    const boothDetails = booths.find(b => String(b.id) === String(boothId)) || null;
+    const centerDetails = centers.find(c => String(c.id) === String(centerId)) || null;
+    const slotDetails = slotTimes.find(s => String(s.id) === String(slotTimeId)) || null;
+
+    const newRow = {
+      appointmentRequestId: newId,
+      voterIdentifier,
+      hchName,
+      age: Number(age),
+      gender,
+      constituencyId: Number(constituencyId) || null,
+      boothId: Number(boothId) || null,
+      centerId: Number(centerId) || null,
+      slotId: Number(slotTimeId) || null,
+      appointmentDate: date,
+      karyakartaName,
+      karyakartaContactNumber,
+      isFamilyHead,
+      familyHeadName,
+      familyId: familyId ? Number(familyId) : null,
+      isMinor,
+      boothDetails,
+      centerDetails,
+      slotDetails,
+      status: "Pending",
+    };
+
+    try {
+      setRows([...(rows || []), newRow]);
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create appointment locally");
     }
-
-    // Capacity block (ignore self when editing)
-    const slot = slotTimes.find(
-      (s) => s.id === Number(slotTimeId)
-    );
-
-    const used = rows.filter(
-      (a) =>
-        a.slotTimeId === Number(slotTimeId) &&
-        a.date === date &&
-        a.id !== editId
-    ).length;
-
-    if (
-      slot &&
-      slot.capacity &&
-      used >= Number(slot.capacity)
-    ) {
-      alert("Slot capacity full");
-      return;
-    }
-
-    if (editId) {
-      // UPDATE
-      setRows(
-        rows.map((a) =>
-          a.id === editId
-            ? {
-                ...a,
-                voterId,
-                voterName,
-                constituencyId: Number(constituencyId),
-                boothId: Number(boothId),
-                centerId: Number(centerId),
-                slotTypeId: Number(slotTypeId),
-                slotTimeId: Number(slotTimeId),
-                date,
-              }
-            : a
-        )
-      );
-    } else {
-      // CREATE
-      setRows([
-        ...rows,
-        {
-          id: rows.length + 1,
-          voterId,
-          voterName,
-          constituencyId: Number(constituencyId),
-          boothId: Number(boothId),
-          centerId: Number(centerId),
-          slotTypeId: Number(slotTypeId),
-          slotTimeId: Number(slotTimeId),
-          date,
-        },
-      ]);
-    }
-
-    resetForm();
-  };
-
-  /* ---------- EDIT ---------- */
-  const editAppointment = (a) => {
-    setEditId(a.id);
-    setVoterId(a.voterId);
-    setVoterName(a.voterName);
-    setConstituencyId(a.constituencyId);
-    setBoothId(a.boothId);
-    setCenterId(a.centerId);
-    setSlotTypeId(a.slotTypeId);
-    setSlotTimeId(a.slotTimeId);
-    setDate(a.date);
-  };
-
-  /* ---------- DELETE ---------- */
-  const deleteAppointment = (id) => {
-    if (!window.confirm("Delete this appointment?")) return;
-    setRows(rows.filter((a) => a.id !== id));
-    if (editId === id) resetForm();
   };
 
   const resetForm = () => {
-    setEditId(null);
-    setVoterId("");
-    setVoterName("");
+    setVoterIdentifier("");
+    setHchName("");
+    setAge("");
+    setGender("");
     setConstituencyId("");
     setBoothId("");
     setCenterId("");
-    setSlotTypeId("");
     setSlotTimeId("");
     setDate("");
+    setKaryakartaName("");
+    setKaryakartaContactNumber("");
+    setIsFamilyHead(false);
+    setFamilyHeadName("");
+    setFamilyId("");
+    setIsMinor(false);
   };
 
+  /* ---------- RENDER ---------- */
   return (
     <div className="card">
-      <h2>Appointment</h2>
+      <h2>Appointment Requests</h2>
 
-      <input placeholder="Voter ID" value={voterId} onChange={(e) => setVoterId(e.target.value)} />
-      <input placeholder="Voter Name" value={voterName} onChange={(e) => setVoterName(e.target.value)} />
+      <input placeholder="Voter Identifier" value={voterIdentifier} onChange={e => setVoterIdentifier(e.target.value)} />
+      <input placeholder="Voter Name" value={hchName} onChange={e => setHchName(e.target.value)} />
+      <input placeholder="Age" type="number" value={age} onChange={e => setAge(e.target.value)} />
+      <input placeholder="Gender" value={gender} onChange={e => setGender(e.target.value)} />
 
-      <select value={constituencyId} onChange={(e) => {
-        setConstituencyId(e.target.value);
-        setBoothId("");
-        setCenterId("");
-        setSlotTypeId("");
-        setSlotTimeId("");
-      }}>
+      <select value={constituencyId} onChange={e => setConstituencyId(e.target.value)}>
         <option value="">Select Constituency</option>
-        {constituencies.map((c) => (
+        {constituencies.map(c => (
           <option key={c.id} value={c.id}>{c.constituency}</option>
         ))}
       </select>
 
-      <select value={boothId} disabled={!constituencyId} onChange={(e) => {
-        setBoothId(e.target.value);
-        setCenterId("");
-        setSlotTypeId("");
-        setSlotTimeId("");
-      }}>
+      <select value={boothId} onChange={e => setBoothId(e.target.value)}>
         <option value="">Select Booth</option>
-        {filteredBooths.map((b) => (
+        {booths.map(b => (
           <option key={b.id} value={b.id}>{b.name}</option>
         ))}
       </select>
 
-      <select value={centerId} disabled={!boothId} onChange={(e) => {
-        setCenterId(e.target.value);
-        setSlotTypeId("");
-        setSlotTimeId("");
-      }}>
+      <select value={centerId} onChange={e => setCenterId(e.target.value)}>
         <option value="">Select Center</option>
-        {filteredCenters.map((c) => (
+        {centers.map(c => (
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
       </select>
 
-      <select value={slotTypeId} disabled={!centerId} onChange={(e) => {
-        setSlotTypeId(e.target.value);
-        setSlotTimeId("");
-      }}>
-        <option value="">Select Slot Type</option>
-        {filteredSlotTypes.map((s) => (
-          <option key={s.id} value={s.id}>{s.name}</option>
-        ))}
-      </select>
-
-      <select value={slotTimeId} disabled={!slotTypeId} onChange={(e) => setSlotTimeId(e.target.value)}>
+      <select value={slotTimeId} onChange={e => setSlotTimeId(e.target.value)}>
         <option value="">Select Slot Time</option>
-        {filteredSlotTimes.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.startTime} - {s.endTime}
-          </option>
+        {slotTimes.map(s => (
+          <option key={s.id} value={s.id}>{s.startTime} - {s.endTime}</option>
         ))}
       </select>
 
-      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <input type="date" value={date} onChange={e => setDate(e.target.value)} />
 
-      <button onClick={saveAppointment}>
-        {editId ? "Update Appointment" : "Save Appointment"}
-      </button>
+      <input placeholder="Karyakarta Name" value={karyakartaName} onChange={e => setKaryakartaName(e.target.value)} />
+      <input placeholder="Karyakarta Contact" value={karyakartaContactNumber} onChange={e => setKaryakartaContactNumber(e.target.value)} />
+
+      <label>
+        <input type="checkbox" checked={isFamilyHead} onChange={e => setIsFamilyHead(e.target.checked)} />
+        Is Family Head
+      </label>
+
+      <input placeholder="Family Head Name" value={familyHeadName} onChange={e => setFamilyHeadName(e.target.value)} />
+      <input placeholder="Family ID" value={familyId} onChange={e => setFamilyId(e.target.value)} />
+
+      <label>
+        <input type="checkbox" checked={isMinor} onChange={e => setIsMinor(e.target.checked)} />
+        Is Minor
+      </label>
+
+      <button onClick={saveAppointment}>Save Appointment</button>
 
       {/* ---------- TABLE ---------- */}
       <table>
@@ -222,33 +183,28 @@ export default function AppointmentTab({
           <tr>
             <th>ID</th>
             <th>Voter</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Booth</th>
             <th>Center</th>
             <th>Slot</th>
             <th>Date</th>
-            <th>Actions</th>
+            <th>Status</th>
           </tr>
         </thead>
-        <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan="6">No appointments</td>
-            </tr>
-          )}
 
-          {rows.map((a) => (
-            <tr key={a.id}>
-              <td>{a.id}</td>
-              <td>{a.voterName}</td>
-              <td>{centers.find(c => c.id === a.centerId)?.name}</td>
-              <td>
-                {slotTimes.find(s => s.id === a.slotTimeId)?.startTime} -{" "}
-                {slotTimes.find(s => s.id === a.slotTimeId)?.endTime}
-              </td>
-              <td>{a.date}</td>
-              <td>
-                <button onClick={() => editAppointment(a)}>Edit</button>
-                <button onClick={() => deleteAppointment(a.id)}>Delete</button>
-              </td>
+        <tbody>
+          {rows.map(a => (
+            <tr key={a.appointmentRequestId}>
+              <td>{a.appointmentRequestId}</td>
+              <td>{a.hchName}</td>
+              <td>{a.age}</td>
+              <td>{a.gender}</td>
+              <td>{a.boothDetails?.name ?? "-"}</td>
+              <td>{a.centerDetails?.name ?? "-"}</td>
+              <td>{a.slotDetails?.startTime} - {a.slotDetails?.endTime}</td>
+              <td>{a.appointmentDate}</td>
+              <td>{a.status}</td>
             </tr>
           ))}
         </tbody>

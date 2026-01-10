@@ -6,6 +6,7 @@ export default function TabsContainer({ activeTab, setActiveTab }) {
     { key: "slot", label: "Slot" },
     { key: "holiday", label: "Holiday" },
     { key: "appointment", label: "Appointment" }, // ✅ ADDED
+    { key: "familybooking", label: "Family Bookings" },
   ];
 
   return (

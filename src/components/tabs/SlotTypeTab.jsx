@@ -2,13 +2,7 @@ import { useState } from "react";
 import SlotTypeSubTab from "./SlotTypeSubTab";
 import SlotTimeSubTab from "./SlotTimeSubTab";
 
-export default function SlotTypeTab({
-  centers = [],
-  slotTypes,
-  setSlotTypes,
-  slotTimes,
-  setSlotTimes,
-}) {
+export default function SlotTypeTab() {
   const [activeSubTab, setActiveSubTab] = useState("type");
 
   return (
@@ -31,22 +25,8 @@ export default function SlotTypeTab({
         </button>
       </div>
 
-      {activeSubTab === "type" && (
-        <SlotTypeSubTab
-          centers={centers}
-          slotTypes={slotTypes}
-          setSlotTypes={setSlotTypes}
-        />
-      )}
-
-      {activeSubTab === "time" && (
-        <SlotTimeSubTab
-          centers={centers}
-          slotTypes={slotTypes}
-          slotTimes={slotTimes}
-          setSlotTimes={setSlotTimes}
-        />
-      )}
+      {activeSubTab === "type" && <SlotTypeSubTab />}
+      {activeSubTab === "time" && <SlotTimeSubTab />}
     </div>
   );
 }

@@ -1,89 +1,159 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  getCenters,
+  createCenter,
+  updateCenter,
+  deleteCenter,
+  getBooths,
+  getConstituencies,
+} from "../../services/api";
 
-export default function CenterTab({
-  constituencies,
-  booths,
-  rows,
-  setRows,
-}) {
-  const [centerName, setCenterName] = useState("");
-  const [constituencyId, setConstituencyId] = useState("");
-  const [boothId, setBoothId] = useState("");
+export default function CenterTab() {
+  const [centers, setCenters] = useState([]);
+  const [booths, setBooths] = useState([]);
+  const [constituencies, setConstituencies] = useState([]);
 
-  const addCenter = () => {
-    if (!centerName || !constituencyId || !boothId) {
-      alert("Fill all fields");
-      return;
+  const [editingId, setEditingId] = useState(null);
+
+  const [form, setForm] = useState({
+    boothId: "",
+    name: "",
+    address: "",
+    contactNumber: "",
+    contactPerson: "",
+    isActive: true,
+    slotsPerDay: "",
+  });
+
+  /* ======================
+     LOAD DATA
+  ====================== */
+  const loadData = async () => {
+    try {
+      const [centerRes, boothRes, constituencyRes] = await Promise.all([
+        getCenters(),
+        getBooths(),
+        getConstituencies(),
+      ]);
+
+      setCenters(centerRes.data);
+      setBooths(boothRes.data);
+      setConstituencies(constituencyRes.data);
+    } catch (err) {
+      console.error("Failed to load center data", err);
     }
-
-    setRows([
-      ...rows,
-      {
-        id: rows.length + 1,
-        name: centerName,
-        constituencyId: Number(constituencyId),
-        boothId: Number(boothId),
-      },
-    ]);
-
-    setCenterName("");
-    setConstituencyId("");
-    setBoothId("");
   };
 
-  const deleteCenter = (id) => {
-    setRows(rows.filter((c) => c.id !== id));
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  /* ======================
+     FORM HANDLERS
+  ====================== */
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  const editCenter = (id) => {
-    const newName = prompt("Edit Center Name");
-    if (!newName) return;
-
-    setRows(
-      rows.map((c) =>
-        c.id === id ? { ...c, name: newName } : c
-      )
-    );
+  const resetForm = () => {
+    setEditingId(null);
+    setForm({
+      boothId: "",
+      name: "",
+      address: "",
+      contactNumber: "",
+      contactPerson: "",
+      isActive: true,
+      slotsPerDay: "",
+    });
   };
 
-  const filteredBooths = booths.filter(
-    (b) => b.constituencyId === Number(constituencyId)
-  );
+  /* ======================
+     ADD / UPDATE
+  ====================== */
+  const handleSave = async () => {
+    if (!form.name || !form.boothId) return;
 
-  const getConstituencyName = (id) =>
-    constituencies.find((c) => c.id === id)?.constituency || "-";
+    try {
+      if (editingId) {
+        await updateCenter(editingId, {
+          id: editingId,
+          ...form,
+          boothId: Number(form.boothId),
+          slotsPerDay: Number(form.slotsPerDay),
+        });
+      } else {
+        await createCenter({
+          ...form,
+          boothId: Number(form.boothId),
+          slotsPerDay: Number(form.slotsPerDay),
+        });
+      }
 
+      resetForm();
+      loadData();
+    } catch (err) {
+      console.error("Save failed", err);
+    }
+  };
+
+  /* ======================
+     DELETE
+  ====================== */
+  const handleDelete = async (id) => {
+    try {
+      await deleteCenter(id);
+      loadData();
+    } catch {
+      alert("Delete failed");
+    }
+  };
+
+  /* ======================
+     HELPERS
+  ====================== */
   const getBoothName = (id) =>
     booths.find((b) => b.id === id)?.name || "-";
 
+  const getConstituencyName = (boothId) => {
+    const booth = booths.find((b) => b.id === boothId);
+    return (
+      constituencies.find((c) => c.id === booth?.constituencyId)?.name ||
+      "-"
+    );
+  };
+
+  /* ======================
+     UI
+  ====================== */
   return (
-    <div className="card">
-      <h2>Center</h2>
+  <div className="card">
+    <h2>Center</h2>
 
-      {/* FORM */}
-      <div className="form-row">
+    {/* ===== Add / Update Center Form ===== */}
+    <div
+      style={{
+        marginBottom: "20px",
+        padding: "15px",
+        border: "1px solid #ddd",
+        borderRadius: "5px",
+      }}
+    >
+      {/* Row 1: Select Booth + Center Name */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
         <select
-          value={constituencyId}
-          onChange={(e) => {
-            setConstituencyId(e.target.value);
-            setBoothId(""); // reset booth
-          }}
-        >
-          <option value="">Select Constituency</option>
-          {constituencies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.constituency}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={boothId}
-          onChange={(e) => setBoothId(e.target.value)}
-          disabled={!constituencyId}
+          name="boothId"
+          value={form.boothId}
+          onChange={handleChange}
+          style={{ flex: 1, padding: "8px" }}
         >
           <option value="">Select Booth</option>
-          {filteredBooths.map((b) => (
+          {booths.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
             </option>
@@ -91,49 +161,167 @@ export default function CenterTab({
         </select>
 
         <input
+          name="name"
           placeholder="Center Name"
-          value={centerName}
-          onChange={(e) => setCenterName(e.target.value)}
+          value={form.name}
+          onChange={handleChange}
+          style={{ flex: 2, padding: "8px" }}
         />
-
-        <button onClick={addCenter}>Add</button>
       </div>
 
-      {/* TABLE */}
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Constituency</th>
-            <th>Booth</th>
-            <th>Center</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+      {/* Row 2: Address */}
+      <div style={{ marginBottom: "10px" }}>
+        <input
+          name="address"
+          placeholder="Address"
+          value={form.address}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "8px" }}
+        />
+      </div>
 
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td>
-              <td>{getConstituencyName(row.constituencyId)}</td>
-              <td>{getBoothName(row.boothId)}</td>
-              <td>{row.name}</td>
-              <td>
-                <button onClick={() => editCenter(row.id)}>Edit</button>
-                <button onClick={() => deleteCenter(row.id)}>
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
+      {/* Row 3: Contact Number + Contact Person */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+        <input
+          name="contactNumber"
+          placeholder="Contact Number"
+          value={form.contactNumber}
+          onChange={handleChange}
+          style={{ flex: 1, padding: "8px" }}
+        />
 
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan="5">No data</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        <input
+          name="contactPerson"
+          placeholder="Contact Person"
+          value={form.contactPerson}
+          onChange={handleChange}
+          style={{ flex: 1, padding: "8px" }}
+        />
+      </div>
+
+      {/* Row 4: Slots / Day + Active + Buttons */}
+      <div
+        style={{
+          display: "flex",
+          gap: "15px",
+          alignItems: "center",
+        }}
+      >
+        <input
+          type="number"
+          name="slotsPerDay"
+          placeholder="Slots / Day"
+          value={form.slotsPerDay}
+          onChange={handleChange}
+          style={{ width: "140px", padding: "8px" }}
+        />
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <input
+            type="checkbox"
+            name="isActive"
+            checked={form.isActive}
+            onChange={handleChange}
+          />
+          Active
+        </label>
+
+        <button
+          onClick={handleSave}
+          style={{
+            padding: "8px 20px",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          {editingId ? "Update" : "Add"}
+        </button>
+
+        {editingId && (
+          <button
+            onClick={resetForm}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#6c757d",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
-  );
+
+    {/* ===== Center Table ===== */}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Center</th>
+          <th>Booth</th>
+          <th>Constituency</th>
+          <th>Active</th>
+          <th>Slots / Day</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {centers.map((c) => (
+          <tr key={c.id}>
+            <td>{c.id}</td>
+            <td>{c.name}</td>
+            <td>{getBoothName(c.boothId)}</td>
+            <td>{getConstituencyName(c.boothId)}</td>
+            <td>{c.isActive ? "Yes" : "No"}</td>
+            <td>{c.slotsPerDay}</td>
+            <td>
+              <button
+                onClick={() => {
+                  setEditingId(c.id);
+                  setForm({
+                    boothId: c.boothId,
+                    name: c.name,
+                    address: c.address,
+                    contactNumber: c.contactNumber,
+                    contactPerson: c.contactPerson,
+                    isActive: c.isActive,
+                    slotsPerDay: c.slotsPerDay,
+                  });
+                }}
+                style={{ marginRight: "8px" }}
+              >
+                Edit
+              </button>
+
+              <button onClick={() => handleDelete(c.id)}>
+                Delete
+              </button>
+            </td>
+          </tr>
+        ))}
+
+        {centers.length === 0 && (
+          <tr>
+            <td colSpan="7">No data</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+);
+
 }

@@ -1,105 +1,223 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  getBooths,
+  createBooth,
+  updateBooth,
+  deleteBooth,
+  getConstituencies,
+} from "../../services/api";
 
-export default function BoothTab({ constituencies, rows, setRows }) {
+export default function BoothTab() {
+  const [booths, setBooths] = useState([]);
+  const [constituencies, setConstituencies] = useState([]);
+
   const [name, setName] = useState("");
   const [constituencyId, setConstituencyId] = useState("");
+  const [editingId, setEditingId] = useState(null);
 
-  const addBooth = () => {
-    if (!name.trim() || !constituencyId) {
-      alert("Select constituency and enter booth name");
-      return;
+  /* ======================
+     LOAD DATA
+  ====================== */
+  const loadData = async () => {
+    try {
+      const [boothRes, constituencyRes] = await Promise.all([
+        getBooths(),
+        getConstituencies(),
+      ]);
+
+      setBooths(boothRes.data);
+      setConstituencies(constituencyRes.data);
+    } catch (err) {
+      console.error("Failed to load booth data", err);
     }
+  };
 
-    setRows([
-      ...rows,
-      {
-        id: rows.length + 1, // stable incremental id
-        name,
-        constituencyId: Number(constituencyId),
-      },
-    ]);
+  useEffect(() => {
+    loadData();
+  }, []);
 
+  /* ======================
+     ADD / UPDATE
+  ====================== */
+  const handleSave = async () => {
+    if (!name.trim() || !constituencyId) return;
+
+    try {
+      if (editingId) {
+        // UPDATE
+        await updateBooth(editingId, {
+          id: editingId,
+          name: name,
+          constituencyId: Number(constituencyId),
+        });
+      } else {
+        // CREATE
+        await createBooth({
+          name: name,
+          constituencyId: Number(constituencyId),
+        });
+      }
+
+      resetForm();
+      loadData();
+    } catch (err) {
+      console.error("Save failed", err);
+    }
+  };
+
+  /* ======================
+     DELETE (SQL PROTECTED)
+  ====================== */
+  const handleDelete = async (id) => {
+    try {
+      await deleteBooth(id);
+      loadData();
+    } catch {
+      alert("Delete failed");
+    }
+  };
+
+  /* ======================
+     HELPERS
+  ====================== */
+  const resetForm = () => {
     setName("");
     setConstituencyId("");
+    setEditingId(null);
   };
 
-  const deleteBooth = (id) => {
-    setRows(rows.filter((b) => b.id !== id));
-  };
+  const getConstituencyName = (id) =>
+    constituencies.find((c) => c.id === id)?.name || "-";
 
-  const editBooth = (id) => {
-    const newName = prompt("Edit Booth Name");
-    if (!newName) return;
-
-    setRows(
-      rows.map((b) =>
-        b.id === id ? { ...b, name: newName } : b
-      )
-    );
-  };
-
-  const getConstituencyName = (id) => {
-    return constituencies.find((c) => c.id === id)?.constituency || "-";
-  };
-
+  /* ======================
+     UI
+  ====================== */
   return (
-    <div className="card">
-      <h2>Booth</h2>
+  <div className="card">
+    <h2>Booth</h2>
 
-      {/* FORM */}
-      <div className="form-row">
+    {/* ===== Add / Update Booth (Single Line) ===== */}
+    <div
+      style={{
+        marginBottom: "20px",
+        padding: "15px",
+        border: "1px solid #ddd",
+        borderRadius: "5px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Booth Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{
+            flex: 2,
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
+        />
+
         <select
           value={constituencyId}
           onChange={(e) => setConstituencyId(e.target.value)}
+          style={{
+            flex: 2,
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
         >
           <option value="">Select Constituency</option>
           {constituencies.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.constituency}
+              {c.name}
             </option>
           ))}
         </select>
 
-        <input
-          value={name}
-          placeholder="Booth Name"
-          onChange={(e) => setName(e.target.value)}
-        />
+        <button
+          onClick={handleSave}
+          style={{
+            padding: "8px 20px",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {editingId ? "Update" : "Add"}
+        </button>
 
-        <button onClick={addBooth}>Add</button>
+        {editingId && (
+          <button
+            onClick={resetForm}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#6c757d",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        )}
       </div>
-
-      {/* TABLE */}
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Constituency</th>
-            <th>Booth Name</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td>
-              <td>{getConstituencyName(row.constituencyId)}</td>
-              <td>{row.name}</td>
-              <td>
-                <button onClick={() => editBooth(row.id)}>Edit</button>
-                <button onClick={() => deleteBooth(row.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan="4">No data</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
     </div>
-  );
+
+    {/* ===== Booth Table ===== */}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Booth</th>
+          <th>Constituency</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {booths.map((b) => (
+          <tr key={b.id}>
+            <td>{b.id}</td>
+            <td>{b.name}</td>
+            <td>{getConstituencyName(b.constituencyId)}</td>
+            <td>
+              <button
+                onClick={() => {
+                  setEditingId(b.id);
+                  setName(b.name);
+                  setConstituencyId(b.constituencyId);
+                }}
+                style={{ marginRight: "8px" }}
+              >
+                Edit
+              </button>
+
+              <button onClick={() => handleDelete(b.id)}>
+                Delete
+              </button>
+            </td>
+          </tr>
+        ))}
+
+        {booths.length === 0 && (
+          <tr>
+            <td colSpan="4">No data</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+);
 }

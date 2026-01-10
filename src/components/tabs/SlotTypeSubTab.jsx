@@ -1,85 +1,118 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  getSlotTypes,
+  createSlotType,
+  updateSlotType,
+  deleteSlotType,
+} from "../../services/api";
 
-export default function SlotTypeSubTab({
-  centers = [],
-  slotTypes,
-  setSlotTypes,
-}) {
-  const [centerId, setCenterId] = useState("");
+export default function SlotTypeSubTab() {
+  const [rows, setRows] = useState([]);
   const [name, setName] = useState("");
-  const [active, setActive] = useState(true);
+  const [editingId, setEditingId] = useState(null);
 
-  const addSlotType = () => {
-    if (!centerId || !name.trim()) return;
+  const loadData = async () => {
+    const res = await getSlotTypes();
+    setRows(res.data);
+  };
 
-    setSlotTypes([
-      ...slotTypes,
-      {
-        id: slotTypes.length + 1,
-        centerId: Number(centerId),
-        name,
-        active,
-      },
-    ]);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    setName("");
-    setActive(true);
+  const handleSave = async () => {
+    if (!name.trim()) return;
+
+    try {
+      if (editingId) {
+        await updateSlotType(editingId, {
+          id: editingId,
+          slotType1: name,
+        });
+      } else {
+        await createSlotType({
+          slotType1: name,
+        });
+      }
+
+      setName("");
+      setEditingId(null);
+      loadData();
+    } catch {
+      alert("Failed to save Slot Type");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteSlotType(id);
+      loadData();
+    } catch {
+      alert("Delete failed (in use)");
+    }
   };
 
   return (
     <>
       <h3>Slot Type</h3>
 
-      <select value={centerId} onChange={(e) => setCenterId(e.target.value)}>
-        <option value="">Select Center</option>
-        {centers.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-
-      <input
-        placeholder="Slot Type Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-
-      <label>
+      <div className="form-row">
         <input
-          type="checkbox"
-          checked={active}
-          onChange={(e) => setActive(e.target.checked)}
+          placeholder="Slot Type Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-        Active
-      </label>
 
-      <button onClick={addSlotType}>Add Slot Type</button>
+        <button onClick={handleSave}>
+          {editingId ? "Update" : "Add"}
+        </button>
+
+        {editingId && (
+          <button
+            onClick={() => {
+              setEditingId(null);
+              setName("");
+            }}
+          >
+            Cancel
+          </button>
+        )}
+      </div>
 
       <table>
         <thead>
           <tr>
             <th>ID</th>
-            <th>Center</th>
             <th>Slot Type</th>
-            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {slotTypes.length === 0 && (
-            <tr>
-              <td colSpan="4">No slot types</td>
-            </tr>
-          )}
-
-          {slotTypes.map((s) => (
-            <tr key={s.id}>
-              <td>{s.id}</td>
-              <td>{centers.find(c => c.id === s.centerId)?.name}</td>
-              <td>{s.name}</td>
-              <td>{s.active ? "Active" : "Inactive"}</td>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <td>{r.id}</td>
+              <td>{r.slotType1}</td>
+              <td>
+                <button
+                  onClick={() => {
+                    setEditingId(r.id);
+                    setName(r.slotType1);
+                  }}
+                >
+                  Edit
+                </button>
+                <button onClick={() => handleDelete(r.id)}>
+                  Delete
+                </button>
+              </td>
             </tr>
           ))}
+
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan="3">No slot types</td>
+            </tr>
+          )}
         </tbody>
       </table>
     </>
