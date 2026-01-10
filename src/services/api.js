@@ -118,11 +118,9 @@ export const uploadConstituencyData = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  return API.post("/UploadData", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // endpoint available at POST /api/ExcelImport/UploadData
+  // Let the browser set the Content-Type (with boundary) for multipart/form-data
+  return API.post("/ExcelImport/UploadData", formData);
 };
 
 /* =========================

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as XLSX from "xlsx";
 import {
   getConstituencies,
   createConstituency,
@@ -16,6 +17,7 @@ export default function ConstituencyTab() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [canUpload, setCanUpload] = useState(false);
 
   /* ======================
      LOAD FROM BACKEND
@@ -78,27 +80,49 @@ export default function ConstituencyTab() {
   /* ======================
      FILE UPLOAD (EXCEL)
   ====================== */
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+ 
 
-    const valid = [".xlsx", ".xls"].some((ext) =>
-      file.name.toLowerCase().endsWith(ext)
-    );
+const handleFileSelect = (e) => {
+  const file = e.target.files?.[0];
+  setCanUpload(false);
+  setSelectedFile(null);
+  setUploadStatus("");
+  if (!file) return;
 
-    if (!valid) {
-      setUploadStatus("Please select an Excel file (.xlsx or .xls)");
-      return;
+  const validExt = [".xlsx", ".xls"].some((ext) => file.name.toLowerCase().endsWith(ext));
+  if (!validExt) {
+    setUploadStatus("Please select an Excel file (.xlsx or .xls)");
+    return;
+  }
+
+  if (file.size > 50 * 1024 * 1024) {
+    setUploadStatus("File size exceeds 50 MB limit");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, { type: "array" });
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const rowsPreview = XLSX.utils.sheet_to_json(firstSheet, { defval: null });
+      const rowCount = Array.isArray(rowsPreview) ? rowsPreview.length : 0;
+      setUploadStatus(`Preview: ${rowCount} data rows found.`);
+      setSelectedFile(file);
+      setCanUpload(rowCount > 0);
+      if (rowCount === 0) {
+        setUploadStatus("Preview: No data rows found in the selected file.");
+      }
+    } catch (err) {
+      console.error("Local parse failed", err);
+      setUploadStatus("Could not parse file locally; server may accept it.");
+      setSelectedFile(file);
+      setCanUpload(true);
     }
-
-    if (file.size > 50 * 1024 * 1024) {
-      setUploadStatus("File size exceeds 50 MB limit");
-      return;
-    }
-
-    setSelectedFile(file);
-    setUploadStatus("");
   };
+  reader.readAsArrayBuffer(file);
+};
 
   const handleFileUpload = async () => {
     if (!selectedFile) return;
@@ -106,17 +130,29 @@ export default function ConstituencyTab() {
     setIsUploading(true);
     setUploadStatus("Uploading...");
 
-    const result = await uploadConstituencyData(selectedFile);
-
-    if (result.success) {
+    try {
+      const res = await uploadConstituencyData(selectedFile);
+      // success (2xx)
       setUploadStatus("File uploaded successfully!");
       setSelectedFile(null);
-      loadData();
-    } else {
-      setUploadStatus(`Upload failed: ${result.error}`);
+      await loadData();
+      // if backend returns details, show briefly
+      if (res && res.data) {
+        if (res.data.errors && res.data.errors.length) {
+          setUploadStatus(`Uploaded with ${res.data.errors.length} errors`);
+        } else if (res.data.message) {
+          setUploadStatus((s) => s + ` — ${res.data.message}`);
+        }
+      }
+    } catch (err) {
+      console.error("Upload failed", err);
+      // Extract server error message if available
+      const serverMsg = err?.response?.data || err?.response?.statusText;
+      const msg = serverMsg ? JSON.stringify(serverMsg) : err.message;
+      setUploadStatus(`Upload failed: ${msg}`);
+    } finally {
+      setIsUploading(false);
     }
-
-    setIsUploading(false);
   };
 
   const downloadTemplate = () => {
@@ -219,17 +255,17 @@ export default function ConstituencyTab() {
       id="constituency-file-input"
       type="file"
       accept=".xlsx,.xls"
-      onChange={handleFileSelect}
+        onChange={handleFileSelect}
       style={{ flex: 1 }}
     />
 
     <button
       onClick={handleFileUpload}
-      disabled={!selectedFile || isUploading}
+      disabled={!selectedFile || isUploading || !canUpload}
       style={{
         padding: "8px 20px",
         cursor:
-          !selectedFile || isUploading ? "not-allowed" : "pointer",
+          !selectedFile || isUploading || !canUpload ? "not-allowed" : "pointer",
         opacity: !selectedFile || isUploading ? 0.6 : 1,
         backgroundColor: "#007bff",
         color: "white",
