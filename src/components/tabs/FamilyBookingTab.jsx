@@ -190,7 +190,7 @@ export default function FamilyBookingTab() {
               <div
                 onClick={() => toggleAccordion(booking.familyBookingId)}
                 style={{
-                  padding: "15px 20px",
+                  padding: "8px 12px",
                   backgroundColor: isExpanded ? "#007bff" : "#f8f9fa",
                   color: isExpanded ? "white" : "#333",
                   cursor: "pointer",
@@ -200,33 +200,35 @@ export default function FamilyBookingTab() {
                   transition: "all 0.3s ease",
                   userSelect: "none",
                   flexWrap: "wrap",
-                  gap: "10px"
+                  gap: "10px",
+                  minHeight: "40px"
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "20px", flex: 1, flexWrap: "wrap" }}>
-                  <div style={{ fontSize: "16px", fontWeight: "bold" }}>
+                  <div style={{ fontSize: "14px", fontWeight: "bold" }}>
                     {familyHead.name}
                   </div>
-                  <div style={{ fontSize: "14px", opacity: 0.9 }}>
+                  <div style={{ fontSize: "13px", opacity: 0.9 }}>
                     VCard: {familyHead.vCardId}
                   </div>
-                  <div style={{ fontSize: "14px", opacity: 0.9 }}>
+                  <div style={{ fontSize: "13px", opacity: 0.9 }}>
                     Mobile: {familyHead.contactNumber}
                   </div>
-                  <div style={{ fontSize: "14px", opacity: 0.9 }}>
+                  <div style={{ fontSize: "13px", opacity: 0.9 }}>
                     Constituency: {booking.constituencyName}
                   </div>
-                  <div style={{ fontSize: "14px", opacity: 0.9 }}>
+                  <div style={{ fontSize: "13px", opacity: 0.9 }}>
                     Part: {booking.partNumber}
                   </div>
-                  <div style={{ fontSize: "14px", opacity: 0.9 }}>
+                  <div style={{ fontSize: "13px", opacity: 0.9 }}>
                     Center: {booking.centerName}
                   </div>
                 </div>
                 <div style={{ 
-                  fontSize: "24px", 
+                  fontSize: "12px", 
                   transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.3s ease"
+                  transition: "transform 0.3s ease",
+                  lineHeight: "1"
                 }}>
                   ▼
                 </div>

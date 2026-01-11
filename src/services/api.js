@@ -5,7 +5,7 @@ import axios from "axios";
 ========================= */
 
 const API = axios.create({
-  baseURL: "http://localhost:5084/api",
+  baseURL: "https://localhost:7233/api",
 });
 
 /* =========================
