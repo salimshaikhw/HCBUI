@@ -7,6 +7,7 @@ import {
   getCenters,
   getSlotTypes,
 } from "../../services/api";
+import Pagination from "../layout/Pagination";
 
 export default function SlotTimeSubTab() {
   const [slots, setSlots] = useState([]);
@@ -21,6 +22,9 @@ export default function SlotTimeSubTab() {
   const [isActive, setIsActive] = useState(true);
 
   const [editingId, setEditingId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   /* ======================
      LOAD ALL DATA
@@ -110,6 +114,12 @@ export default function SlotTimeSubTab() {
     setMaxAppointment("");
     setIsActive(true);
   };
+
+  // Pagination
+  const totalPages = Math.ceil(slots.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSlots = slots.slice(startIndex, endIndex);
 
   /* ======================
      RENDER
@@ -262,7 +272,7 @@ export default function SlotTimeSubTab() {
       </thead>
 
       <tbody>
-        {slots.map((s) => (
+        {paginatedSlots.map((s) => (
           <tr key={s.id}>
             <td>{s.id}</td>
             <td>{(() => {
@@ -306,6 +316,19 @@ export default function SlotTimeSubTab() {
         )}
       </tbody>
     </table>
+
+    {slots.length > 0 && (
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(newValue) => {
+          setItemsPerPage(newValue);
+          setCurrentPage(1);
+        }}
+      />
+    )}
   </div>
 );
 

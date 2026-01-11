@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getFamilyBookings } from "../../services/api";
+import Pagination from "../layout/Pagination";
 
 export default function FamilyBookingTab() {
   const [expandedAccordion, setExpandedAccordion] = useState(null);
@@ -504,106 +505,16 @@ export default function FamilyBookingTab() {
 
       {/* Pagination Controls */}
       {filteredBookings.length > 0 && (
-        <div style={{
-          marginTop: "20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "15px",
-          backgroundColor: "#f8f9fa",
-          borderRadius: "6px",
-          flexWrap: "wrap",
-          gap: "10px"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <label style={{ fontSize: "14px", fontWeight: "bold" }}>Items per page:</label>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              style={{
-                padding: "6px 10px",
-                fontSize: "14px",
-                borderRadius: "4px",
-                border: "1px solid #ccc"
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              style={{
-                padding: "6px 12px",
-                fontSize: "14px",
-                borderRadius: "4px",
-                border: "none",
-                backgroundColor: currentPage === 1 ? "#e9ecef" : "#007bff",
-                color: currentPage === 1 ? "#6c757d" : "white",
-                cursor: currentPage === 1 ? "not-allowed" : "pointer"
-              }}
-            >
-              First
-            </button>
-            <button
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              style={{
-                padding: "6px 12px",
-                fontSize: "14px",
-                borderRadius: "4px",
-                border: "none",
-                backgroundColor: currentPage === 1 ? "#e9ecef" : "#007bff",
-                color: currentPage === 1 ? "#6c757d" : "white",
-                cursor: currentPage === 1 ? "not-allowed" : "pointer"
-              }}
-            >
-              Previous
-            </button>
-            <span style={{ fontSize: "14px", padding: "0 10px" }}>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              style={{
-                padding: "6px 12px",
-                fontSize: "14px",
-                borderRadius: "4px",
-                border: "none",
-                backgroundColor: currentPage === totalPages ? "#e9ecef" : "#007bff",
-                color: currentPage === totalPages ? "#6c757d" : "white",
-                cursor: currentPage === totalPages ? "not-allowed" : "pointer"
-              }}
-            >
-              Next
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              style={{
-                padding: "6px 12px",
-                fontSize: "14px",
-                borderRadius: "4px",
-                border: "none",
-                backgroundColor: currentPage === totalPages ? "#e9ecef" : "#007bff",
-                color: currentPage === totalPages ? "#6c757d" : "white",
-                cursor: currentPage === totalPages ? "not-allowed" : "pointer"
-              }}
-            >
-              Last
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newValue) => {
+            setItemsPerPage(newValue);
+            setCurrentPage(1);
+          }}
+        />
       )}
     </div>
   );

@@ -12,7 +12,8 @@ body {
 /* ---------- PAGE LAYOUT ---------- */
 .page {
   display: flex;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ---------- LEFT TABS ---------- */
@@ -21,6 +22,8 @@ body {
   background: #ffffff;
   border-right: 1px solid #ddd;
   padding: 10px;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .tabs button {
@@ -45,6 +48,7 @@ body {
   flex: 1;
   padding: 16px;
   overflow-y: auto;
+  height: 100%;
 }
 
 /* ---------- CARD ---------- */

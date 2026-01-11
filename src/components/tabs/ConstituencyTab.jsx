@@ -7,6 +7,8 @@ import {
   deleteConstituency,
   uploadConstituencyData,
 } from "../../services/api";
+import Pagination from "../layout/Pagination";
+import templateFile from "../../assets/HCBData.xlsx";
 
 export default function ConstituencyTab() {
   const [rows, setRows] = useState([]);
@@ -18,6 +20,9 @@ export default function ConstituencyTab() {
   const [uploadStatus, setUploadStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [canUpload, setCanUpload] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   /* ======================
      LOAD FROM BACKEND
@@ -156,28 +161,20 @@ const handleFileSelect = (e) => {
   };
 
   const downloadTemplate = () => {
-  const headers = ["Name,ConstituencyNumber"];
-  const sampleData = [
-    "Sample Constituency 1,1",
-    "Sample Constituency 2,2",
-  ];
+    const link = document.createElement("a");
+    link.href = templateFile;
+    link.download = "HCBData.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-  const csvContent = [...headers, ...sampleData].join("\n");
 
-  const blob = new Blob([csvContent], {
-    type: "text/csv;charset=utf-8;",
-  });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = "constituency_template.csv";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
+  // Pagination
+  const totalPages = Math.ceil(rows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRows = rows.slice(startIndex, endIndex);
 
   /* ======================
      UI (MATCHES SENIOR)
@@ -312,7 +309,7 @@ const handleFileSelect = (e) => {
               <td colSpan="4">No data</td>
             </tr>
           ) : (
-            rows.map((r) => (
+            paginatedRows.map((r) => (
               <tr key={r.id}>
                 <td>{r.id}</td>
                 <td>{r.name}</td>
@@ -336,6 +333,19 @@ const handleFileSelect = (e) => {
           )}
         </tbody>
       </table>
+
+      {rows.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newValue) => {
+            setItemsPerPage(newValue);
+            setCurrentPage(1);
+          }}
+        />
+      )}
     </div>
   );
 }

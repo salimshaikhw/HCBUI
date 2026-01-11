@@ -5,11 +5,15 @@ import {
   updateSlotType,
   deleteSlotType,
 } from "../../services/api";
+import Pagination from "../layout/Pagination";
 
 export default function SlotTypeSubTab() {
   const [rows, setRows] = useState([]);
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const loadData = async () => {
     const res = await getSlotTypes();
@@ -52,6 +56,12 @@ export default function SlotTypeSubTab() {
     }
   };
 
+  // Pagination
+  const totalPages = Math.ceil(rows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRows = rows.slice(startIndex, endIndex);
+
   return (
     <>
       <h3>Slot Type</h3>
@@ -88,7 +98,7 @@ export default function SlotTypeSubTab() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {paginatedRows.map((r) => (
             <tr key={r.id}>
               <td>{r.id}</td>
               <td>{r.slotType1}</td>
@@ -115,6 +125,19 @@ export default function SlotTypeSubTab() {
           )}
         </tbody>
       </table>
+
+      {rows.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newValue) => {
+            setItemsPerPage(newValue);
+            setCurrentPage(1);
+          }}
+        />
+      )}
     </>
   );
 }

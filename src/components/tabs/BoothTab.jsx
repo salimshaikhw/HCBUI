@@ -6,6 +6,7 @@ import {
   deleteBooth,
   getConstituencies,
 } from "../../services/api";
+import Pagination from "../layout/Pagination";
 
 export default function BoothTab() {
   const [booths, setBooths] = useState([]);
@@ -16,6 +17,9 @@ export default function BoothTab() {
   const [partNumber, setPartNumber] = useState("");
   const [town, setTown] = useState("");
   const [editingId, setEditingId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   /* ======================
      LOAD DATA
@@ -96,6 +100,12 @@ export default function BoothTab() {
 
   const getConstituencyName = (id) =>
     constituencies.find((c) => c.id === id)?.name || "-";
+
+  // Pagination
+  const totalPages = Math.ceil(booths.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBooths = booths.slice(startIndex, endIndex);
 
   /* ======================
      UI
@@ -229,7 +239,7 @@ export default function BoothTab() {
         </tr>
       </thead>
       <tbody>
-        {booths.map((b) => (
+        {paginatedBooths.map((b) => (
           <tr key={b.id}>
             <td>{b.id}</td>
             <td>{b.name}</td>
@@ -261,6 +271,19 @@ export default function BoothTab() {
         )}
       </tbody>
     </table>
+
+    {booths.length > 0 && (
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(newValue) => {
+          setItemsPerPage(newValue);
+          setCurrentPage(1);
+        }}
+      />
+    )}
   </div>
 );
 

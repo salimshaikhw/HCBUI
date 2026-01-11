@@ -7,6 +7,7 @@ import {
   getBooths,
   getConstituencies,
 } from "../../services/api";
+import Pagination from "../layout/Pagination";
 
 export default function CenterTab() {
   const [centers, setCenters] = useState([]);
@@ -14,6 +15,9 @@ export default function CenterTab() {
   const [constituencies, setConstituencies] = useState([]);
 
   const [editingId, setEditingId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [form, setForm] = useState({
     boothId: "",
@@ -127,6 +131,12 @@ export default function CenterTab() {
       "-"
     );
   };
+
+  // Pagination
+  const totalPages = Math.ceil(centers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCenters = centers.slice(startIndex, endIndex);
 
   /* ======================
      UI
@@ -285,7 +295,7 @@ export default function CenterTab() {
       </thead>
 
       <tbody>
-        {centers.map((c) => (
+        {paginatedCenters.map((c) => (
           <tr key={c.id}>
             <td>{c.id}</td>
             <td>{c.name}</td>
@@ -326,6 +336,19 @@ export default function CenterTab() {
         )}
       </tbody>
     </table>
+
+    {centers.length > 0 && (
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(newValue) => {
+          setItemsPerPage(newValue);
+          setCurrentPage(1);
+        }}
+      />
+    )}
   </div>
 );
 

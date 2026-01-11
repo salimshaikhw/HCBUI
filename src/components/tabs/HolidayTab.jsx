@@ -5,6 +5,7 @@ import {
   updateHoliday,
   deleteHoliday,
 } from "../../services/api";
+import Pagination from "../layout/Pagination";
 
 export default function HolidayTab({
   booths = [],
@@ -21,6 +22,9 @@ export default function HolidayTab({
   const [fullDay, setFullDay] = useState(false);
   const [globalHoliday, setGlobalHoliday] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   /* ---------------- LOAD ---------------- */
 
@@ -150,6 +154,12 @@ export default function HolidayTab({
       alert("Delete failed");
     }
   };
+
+  // Pagination
+  const totalPages = Math.ceil(rows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRows = rows.slice(startIndex, endIndex);
 
   /* ---------------- UI ---------------- */
 
@@ -343,7 +353,7 @@ export default function HolidayTab({
           </tr>
         )}
 
-        {rows.map((h) => (
+        {paginatedRows.map((h) => (
           <tr key={h.id}>
             <td>{h.id}</td>
             <td>{getBoothLabel(booths.find((b) => b.id === h.boothId))}</td>
@@ -369,6 +379,19 @@ export default function HolidayTab({
         ))}
       </tbody>
     </table>
+
+    {rows.length > 0 && (
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(newValue) => {
+          setItemsPerPage(newValue);
+          setCurrentPage(1);
+        }}
+      />
+    )}
   </div>
 );
 
