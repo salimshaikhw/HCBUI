@@ -28,6 +28,10 @@ export default function FamilyBookingTab() {
   const [filterConstituency, setFilterConstituency] = useState("");
   const [filterPartNumber, setFilterPartNumber] = useState("");
   const [filterCenter, setFilterCenter] = useState("");
+  const [filterMemberName, setFilterMemberName] = useState("");
+  const [filterKaryakartaName, setFilterKaryakartaName] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const toggleAccordion = (id) => {
     setExpandedAccordion(expandedAccordion === id ? null : id);
@@ -58,8 +62,24 @@ export default function FamilyBookingTab() {
     const matchConstituency = !filterConstituency || booking.constituencyName === filterConstituency;
     const matchPartNumber = !filterPartNumber || booking.partNumber === parseInt(filterPartNumber);
     const matchCenter = !filterCenter || booking.centerName === filterCenter;
-    return matchConstituency && matchPartNumber && matchCenter;
+    const matchMemberName = !filterMemberName || booking.members.some(m => 
+      m.name.toLowerCase().includes(filterMemberName.toLowerCase())
+    );
+    const matchKaryakartaName = !filterKaryakartaName || 
+      (booking.karyakartaName && booking.karyakartaName.toLowerCase().includes(filterKaryakartaName.toLowerCase()));
+    return matchConstituency && matchPartNumber && matchCenter && matchMemberName && matchKaryakartaName;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterConstituency, filterPartNumber, filterCenter, filterMemberName, filterKaryakartaName]);
 
   return (
     <div className="card">
@@ -142,12 +162,52 @@ export default function FamilyBookingTab() {
             </select>
           </div>
 
+          <div style={{ flex: "1", minWidth: "200px" }}>
+            <label style={{ display: "block", marginBottom: "5px", fontSize: "14px", fontWeight: "bold" }}>
+              Family Member Name
+            </label>
+            <input
+              type="text"
+              value={filterMemberName}
+              onChange={(e) => setFilterMemberName(e.target.value)}
+              placeholder="Search by member name..."
+              style={{
+                width: "100%",
+                padding: "8px",
+                fontSize: "14px",
+                borderRadius: "4px",
+                border: "1px solid #ccc"
+              }}
+            />
+          </div>
+
+          <div style={{ flex: "1", minWidth: "200px" }}>
+            <label style={{ display: "block", marginBottom: "5px", fontSize: "14px", fontWeight: "bold" }}>
+              Karyakarta Name
+            </label>
+            <input
+              type="text"
+              value={filterKaryakartaName}
+              onChange={(e) => setFilterKaryakartaName(e.target.value)}
+              placeholder="Search by karyakarta..."
+              style={{
+                width: "100%",
+                padding: "8px",
+                fontSize: "14px",
+                borderRadius: "4px",
+                border: "1px solid #ccc"
+              }}
+            />
+          </div>
+
           <div style={{ flex: "0", minWidth: "120px", display: "flex", alignItems: "flex-end" }}>
             <button
               onClick={() => {
                 setFilterConstituency("");
                 setFilterPartNumber("");
                 setFilterCenter("");
+                setFilterMemberName("");
+                setFilterKaryakartaName("");
               }}
               style={{
                 width: "100%",
@@ -165,13 +225,13 @@ export default function FamilyBookingTab() {
           </div>
         </div>
         <div style={{ marginTop: "10px", fontSize: "14px", color: "#666" }}>
-          {loading ? "Loading bookings..." : `Showing ${filteredBookings.length} of ${bookings.length} bookings`}
+          {loading ? "Loading bookings..." : `Showing ${startIndex + 1}-${Math.min(endIndex, filteredBookings.length)} of ${filteredBookings.length} bookings (${bookings.length} total)`}
           {error && <span style={{ color: 'red', marginLeft: 8 }}>Error: {error}</span>}
         </div>
       </div>
       
       <div style={{ marginTop: "20px" }}>
-        {filteredBookings.map((booking) => {
+        {paginatedBookings.map((booking) => {
           const familyHead = getFamilyHead(booking.members);
           const isExpanded = expandedAccordion === booking.familyBookingId;
 
@@ -439,6 +499,110 @@ export default function FamilyBookingTab() {
           fontSize: "16px"
         }}>
           No bookings found
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredBookings.length > 0 && (
+        <div style={{
+          marginTop: "20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "15px",
+          backgroundColor: "#f8f9fa",
+          borderRadius: "6px",
+          flexWrap: "wrap",
+          gap: "10px"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "bold" }}>Items per page:</label>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              style={{
+                padding: "6px 10px",
+                fontSize: "14px",
+                borderRadius: "4px",
+                border: "1px solid #ccc"
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: "6px 12px",
+                fontSize: "14px",
+                borderRadius: "4px",
+                border: "none",
+                backgroundColor: currentPage === 1 ? "#e9ecef" : "#007bff",
+                color: currentPage === 1 ? "#6c757d" : "white",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer"
+              }}
+            >
+              First
+            </button>
+            <button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: "6px 12px",
+                fontSize: "14px",
+                borderRadius: "4px",
+                border: "none",
+                backgroundColor: currentPage === 1 ? "#e9ecef" : "#007bff",
+                color: currentPage === 1 ? "#6c757d" : "white",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer"
+              }}
+            >
+              Previous
+            </button>
+            <span style={{ fontSize: "14px", padding: "0 10px" }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: "6px 12px",
+                fontSize: "14px",
+                borderRadius: "4px",
+                border: "none",
+                backgroundColor: currentPage === totalPages ? "#e9ecef" : "#007bff",
+                color: currentPage === totalPages ? "#6c757d" : "white",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer"
+              }}
+            >
+              Next
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: "6px 12px",
+                fontSize: "14px",
+                borderRadius: "4px",
+                border: "none",
+                backgroundColor: currentPage === totalPages ? "#e9ecef" : "#007bff",
+                color: currentPage === totalPages ? "#6c757d" : "white",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer"
+              }}
+            >
+              Last
+            </button>
+          </div>
         </div>
       )}
     </div>

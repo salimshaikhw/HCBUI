@@ -19,7 +19,7 @@ import AppointmentTab from "../components/tabs/AppointmentTab";
 import FamilyBookingTab from "../components/tabs/FamilyBookingTab";
 
 export default function AppointmentPage() {
-  const [activeTab, setActiveTab] = useState("constituency");
+  const [activeTab, setActiveTab] = useState("familybooking");
 
   // MASTER DATA
   const [constituencies, setConstituencies] = useState([]);
